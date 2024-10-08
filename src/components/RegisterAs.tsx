@@ -4,16 +4,25 @@ import { Mail } from "lucide-react";
 
 import logo from "../assets/logo.png";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SignUp from "@/shared/SignUp";
 import Login from "@/shared/Login";
+import { useNavigate } from "react-router-dom";
 
 const RegisterAs = () => {
   const [isSignUp, setIsSignUp] = useState<boolean | null>(null);
+  const navigate = useNavigate();
 
   const handleSignUp = (val: boolean) => {
     setIsSignUp(val);
   };
+  const token = localStorage.getItem("jwt_token");
+
+  useEffect(() => {
+    if (token) {
+      navigate("/places");
+    }
+  }, [token]);
 
   return (
     <div className="bg-background-start w-full h-screen flex justify-start items-center gap-32 relative">

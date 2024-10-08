@@ -12,11 +12,21 @@ import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { makeApiRequest } from "@/utils/apiUtils";
+import { ApiResponse } from "@/models/typeDefinitions";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 type loginProps = {
   handleSignUp: (val: boolean) => void;
 };
 
 const Login: React.FC<loginProps> = ({ handleSignUp }) => {
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const FormSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8, {
@@ -32,10 +42,33 @@ const Login: React.FC<loginProps> = ({ handleSignUp }) => {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    // Handle form submission logic
-    console.log("Form submitted:", data);
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    setIsSubmitting(true);
+    const response: ApiResponse = await makeApiRequest(
+      "/user/login",
+      "POST",
+      data
+    );
+    console.log(response);
+
+    if (response?.ok) {
+      const token = response.value?.data.token;
+      if (token) {
+        localStorage.setItem("jwt_token", token);
+      }
+      toast({
+        description: "Login successful!",
+      });
+      navigate("/places");
+    } else {
+      toast({
+        variant: "destructive",
+        description: response.value?.message,
+      });
+    }
+    setIsSubmitting(false);
   }
+
   return (
     <>
       <h1 className="text-center text-lg font-semibold text-white tracking-wider underline">
@@ -96,8 +129,10 @@ const Login: React.FC<loginProps> = ({ handleSignUp }) => {
           <Button
             type="submit"
             className="!my-6 self-center px-12 bg-background-start border border-2 border-white rounded-full hover:bg-white hover:text-[#4dd1d6] tracking-wider"
+            disabled={isSubmitting} // Disable the button while submitting
           >
-            Log in
+            {isSubmitting ? "Logging in..." : "Log in"}{" "}
+            {/* Show loading state */}
           </Button>
         </form>
       </Form>
