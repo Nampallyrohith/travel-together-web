@@ -12,18 +12,28 @@ import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import React from "react";
+import React, { useState } from "react";
+import { makeApiRequest } from "@/utils/apiUtils";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { ApiResponse } from "@/models/typeDefinitions";
 
 type signUpProps = {
   handleSignUp: (val: boolean) => void;
 };
 
 const SignUp: React.FC<signUpProps> = ({ handleSignUp }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const FormSchema = z.object({
     fullName: z.string().min(2, {
       message: "Username must be at least 2 characters.",
     }),
-    email: z.string().email(),
+    email: z.string().email({
+      message: "Please enter a valid email address.",
+    }),
     password: z.string().min(8, {
       message: "Password must be at least 8 characters.",
     }),
@@ -38,9 +48,37 @@ const SignUp: React.FC<signUpProps> = ({ handleSignUp }) => {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    // Handle form submission logic
-    console.log("Form submitted:", data);
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    setIsSubmitting(true);
+
+    // Specify the response type as ApiResponse
+    const response: ApiResponse = await makeApiRequest(
+      "/user/register",
+      "POST",
+      data
+    );
+    console.log(response);
+
+    if (response?.ok) {
+      const token = response.value?.data?.token;
+      if (token) {
+        localStorage.setItem("jwt_token", token);
+      }
+
+      toast({
+        title: "success",
+        description: response.value?.message,
+      });
+      navigate("/places");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Fail",
+        description: response.value?.message,
+      });
+    }
+
+    setIsSubmitting(false);
   }
 
   return (
@@ -126,8 +164,9 @@ const SignUp: React.FC<signUpProps> = ({ handleSignUp }) => {
           <Button
             type="submit"
             className="!my-6 self-center px-12 bg-background-start border border-2 border-white rounded-full hover:bg-white hover:text-[#4dd1d6] tracking-wider"
+            disabled={isSubmitting}
           >
-            Register
+            {isSubmitting ? "Registering..." : "Register"}
           </Button>
         </form>
       </Form>

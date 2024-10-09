@@ -1,8 +1,9 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ACCESS_TOKEN = import.meta.env.VITE_ACCESS_TOKEN;
+
+const token = localStorage.getItem("jwt_token");
 
 type ApiResponse<T> = {
-  success: boolean;
+  ok: boolean;
   status?: number;
   value?: T;
   error?: string;
@@ -10,7 +11,7 @@ type ApiResponse<T> = {
 
 export const makeApiRequest = async <T>(
   endpoint: string,
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: Record<string, unknown> | null
 ): Promise<ApiResponse<T>> => {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -18,8 +19,8 @@ export const makeApiRequest = async <T>(
   const options: RequestInit = {
     method,
     headers: {
-      Authorization: `Bearer ${ACCESS_TOKEN}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   };
 
@@ -33,15 +34,15 @@ export const makeApiRequest = async <T>(
     if (!response.ok) {
       console.warn(`API request failed with status: ${response.status}`);
       return {
-        success: false,
+        ok: false,
         status: response.status,
         value: await response.json(),
-      }; // Include status
+      };
     }
 
-    return { success: true, value: await response.json() as T };
+    return { ok: true, value: (await response.json()) as T };
   } catch (error) {
-    console.error('Network or unexpected error:', error);
-    return { success: false, error: (error as Error).message }; // Provide error message
+    console.error("Network or unexpected error:", error);
+    return { ok: false, error: (error as Error).message }; // Provide error message
   }
 };
